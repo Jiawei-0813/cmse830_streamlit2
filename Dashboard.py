@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(layout="wide", page_title="Ride the Weather: London Bike-Weather Insights")
 
 # --- Title and Welcome Section ---
-st.markdown("<h1 style='text-align: left; color: black;'>🚴‍♂️🚴‍♂️🚴‍♂️ Ride the Weather</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: left; color: #1E90FF;'> Ride the Weather</h1>", unsafe_allow_html=True)
 st.divider()
 st.header("""Welcome to your one-stop destination to explore London's bike-sharing trends! """)
 
@@ -18,7 +18,6 @@ with highlight_col2:
 with highlight_col3:
    st.metric(label="⏰ Most Active Hour", value="5:00 PM - 6:00 PM")
 
-st.write("This dashboard helps you explore how weather, time, and city life come together to create fascinating biking tpatterns in **August 2023**")
 st.divider()
 
 # --- Sidebar for multipage navigation ---
