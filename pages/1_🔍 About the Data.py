@@ -5,7 +5,7 @@ st.set_page_config(layout="wide",
                    page_title="🔍 About the Data")
 st.title("🔍 About the Data")
 
-## Modular Function ##
+# --- Modular Function ---
 def display_features(features):
     """Display dataset feature descriptions."""
     for feature in features:
@@ -14,7 +14,7 @@ def display_features(features):
 tabs = st.tabs(["🚴 Bike Dataset", "🌤️ Weather Dataset"])
 tab1, tab2 = tabs
 
-#### Bike Data ####
+#--- Bike Data ---
 with tab1:
     st.subheader("🚴 London Bike-Sharing Dataset")
     st.markdown("""
@@ -51,7 +51,7 @@ with tab1:
         ]
     display_features(bike_features)
     
-#### Weather Data ####       
+# --- Weather Data ---  
 with tab2:
     st.subheader("🌤️ London Weather Dataset")
     st.write("""

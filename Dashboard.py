@@ -2,12 +2,12 @@ import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Ride the Weather: London Bike-Weather Insights")
 
-# Title and Welcome Section
-st.markdown("<h1 style='text-align: left; color: black;'🚴‍♂️🚴‍♂️🚴‍♂️ Ride the Weather</h1>", unsafe_allow_html=True)
+# --- Title and Welcome Section ---
+st.markdown("<h1 style='text-align: left; color: black;'>🚴‍♂️🚴‍♂️🚴‍♂️ Ride the Weather</h1>", unsafe_allow_html=True)
 st.divider()
 st.header("""Welcome to your one-stop destination to explore London's bike-sharing trends! """)
 
-# Key Highlights Section
+# --- Key Highlights Section ---
 st.markdown("Here are some exciting stats:")
 highlight_col1, highlight_col2, highlight_col3 = st.columns(3)
 
@@ -21,28 +21,36 @@ with highlight_col3:
 st.write("This dashboard helps you explore how weather, time, and city life come together to create fascinating biking tpatterns in **August 2023**")
 st.divider()
 
-# Sidebar for multipage navigation
+# --- Sidebar for multipage navigation ---
 intro_section = st.sidebar.radio("Go to", 
-                                 ["🚀 Why London Bike-sharing Analysis?", 
+                                 ["🚀 Why Bike-sharing Analysis?", 
                                   "🌞 Why August?", 
                                   "🚴‍♂️ Let’s Ride the Weather Together!"])
 
-# Why This App Section
-if intro_section == "🚀 Why London Bike-sharing Analysis?":
+# --- Why This App Section ---
+if intro_section == "🚀 Why Bike-sharing Analysis?":
    st.header("🚀 Why London Bike-sharing Analysis?")
    st.markdown("""
+   Bike-sharing is transforming how cities move, and London is no exception. It’s fast, affordable, and eco-friendly—
+   a perfect solution for both locals and visitors. Here’s why bike-sharing analysis is exciting:
+   - **Sustainable Transport**: Reduces traffic congestion and carbon emissions.
+   - **Urban Mobility**: Provides a flexible and convenient way to navigate the city.
+   - **Data-Driven Insights**: Helps cities optimize bike-sharing systems and infrastructure.
+   - **Community Engagement**: Encourages active lifestyles and social connections.
+             
    London’s bike-sharing isn’t just about getting around—it’s about connecting people, places, and experiences. 
    Whether you’re zipping through traffic, enjoying a park ride, or exploring the city’s landmarks, bikes are part of the rhythm of London life.
 
-   This dashboard is here to make bike-sharing fun and easy to understand! Here’s what you can explore:
-   1. **📅Peak Riding Times**: When do Londoners hit the pedals the most? Morning rush hours or evening wind-downs?
-   2. **🌦Weather’s Role**: How do sunny skies or sudden showers change riding patterns?
-   3. **🚏Station Hotspots**: Which stations see the most action, and why?
+   This dashboard is here to make bike-sharing fun and easy to explore! Here’s what you can explore:
+   1. **🚲Ride Counts**: How many bike-sharing rides happened across the city?
+   2. **⏰Peak Times**: When do Londoners ride the most? Morning rush hours or evening wind-downs?
+   2. **🌦Weather Impact*: How do sunny skies or sudden rains influencing bike-sharing rides?
+   4. **🚏Station Hotspots**: Which stations are the busiest for starts and stops, and why?
 
-   We’ve made it simple and interactive, so you can explore the data, uncover trends, and maybe even plan your next ride!
+   We’ve made it simple and interactive, so you can explore the data, spot patterns, and maybe even plan your next ride!
    """)
 
-# Why August Section
+# --- Why August Section ---
 elif intro_section == "🌞 Why August?":
    st.header("🌞 Why August?")
    st.markdown("""
@@ -52,7 +60,7 @@ elif intro_section == "🌞 Why August?":
    - **Locals commute or relax**, using bikes for quick trips or scenic rides.
    """)
 
-# Dashboard Workflow Overview Section
+# --- Dashboard Workflow Overview Section ---
 else:
    st.header("🚴‍♂️ Let’s Ride the Weather Together!")
    st.markdown("""
