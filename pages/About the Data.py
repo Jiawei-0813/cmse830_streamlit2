@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 
 st.set_page_config(layout="wide", page_title="About the Data")
+st.title("About the Data")
 
 ## Load Data ##
 bike_0 = pd.read_csv('data/bike10pct_raw.csv')
