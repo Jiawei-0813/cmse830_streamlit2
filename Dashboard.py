@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(layout="wide", page_title="Ride the Weather: London Bike-Weather Insights")
 
 # Title and Welcome Section
-st.markdown("<h1 style='text-align: left; color: black;'>>🚴‍♂️ 🚴‍♂️🚴‍♂️ Ride the Weather</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: left; color: black;'🚴‍♂️🚴‍♂️🚴‍♂️ Ride the Weather</h1>", unsafe_allow_html=True)
 st.divider()
 st.header("""Welcome to your one-stop destination to explore London's bike-sharing trends! """)
 
@@ -23,23 +23,13 @@ st.divider()
 
 # Sidebar for multipage navigation
 intro_section = st.sidebar.radio("Go to", 
-                                 ["🌞 Why August?", 
-                                  "🚀 Discover What You Can Do Here", 
+                                 ["🚀 Why London Bike-sharing Analysis?", 
+                                  "🌞 Why August?", 
                                   "🚴‍♂️ Let’s Ride the Weather Together!"])
 
 # Why This App Section
-if intro_section == "🌞 Why August?":
-   st.header("🌞 Why August?")
-   st.markdown("""
-   August is all about sunny vibes, busy streets, and lots of biking! It’s when:
-   - **The weather is warm**, making it perfect for outdoor rides.
-   - **Tourists explore the city**, adding to the bike-sharing buzz.
-   - **Locals commute or relax**, using bikes for quick trips or scenic rides.
-   """)
-
-# Explore Section
-elif intro_section == "🚀 Discover What You Can Do Here":
-   st.header("🚀 Discover What You Can Do Here")
+if intro_section == "🚀 Why London Bike-sharing Analysis?":
+   st.header("🚀 Why London Bike-sharing Analysis?")
    st.markdown("""
    London’s bike-sharing isn’t just about getting around—it’s about connecting people, places, and experiences. 
    Whether you’re zipping through traffic, enjoying a park ride, or exploring the city’s landmarks, bikes are part of the rhythm of London life.
@@ -50,6 +40,16 @@ elif intro_section == "🚀 Discover What You Can Do Here":
    3. **🚏Station Hotspots**: Which stations see the most action, and why?
 
    We’ve made it simple and interactive, so you can explore the data, uncover trends, and maybe even plan your next ride!
+   """)
+
+# Why August Section
+elif intro_section == "🌞 Why August?":
+   st.header("🌞 Why August?")
+   st.markdown("""
+   August is all about sunny vibes, busy streets, and lots of biking! It’s when:
+   - **The weather is warm**, making it perfect for outdoor rides.
+   - **Tourists explore the city**, adding to the bike-sharing buzz.
+   - **Locals commute or relax**, using bikes for quick trips or scenic rides.
    """)
 
 # Dashboard Workflow Overview Section
