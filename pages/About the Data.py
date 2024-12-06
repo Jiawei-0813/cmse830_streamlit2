@@ -106,7 +106,7 @@ with tab1:
         - **`Bike model`** (Categorical): Type of bike.  
         - **`Total duration`** (Ratio): Duration of the trip in seconds.  
         - **`Total duration (ms)`** (Ratio): Duration of the trip in milliseconds.  
-        """, unsafe_allow_html=True]
+        """]
     display_features(bike_features)
     
 #### Weather Data ####       
@@ -147,8 +147,8 @@ with tab2:
 
     st.markdown("**Dataset Coverage:**")
     weather_coverage =[
-                - **Temporal:** August 1 - August 31, 2023.  
-                - **Spatial:** London, United Kingdom (51.5085° N, -0.1257° E).  
+                "- **Temporal:** August 1 - August 31, 2023.  "
+                "- **Spatial:** London, United Kingdom (51.5085° N, -0.1257° E).  "
     ]
     display_features(weather_coverage)
 
@@ -161,7 +161,7 @@ with tab2:
         - **`wind_speed_10m` (Ratio)**: Wind speed at 10 meters above ground in m/s.  
         - **`wind_direction_10m` (Circular Numeric)**: Wind direction at 10 meters above ground in degrees.  
         - **`weather_code` (Nominal)**: Weather condition represented by a numeric code.  
-        """, unsafe_allow_html=True]
+        """]
     display_features(weather_features)
     
     # Styling
