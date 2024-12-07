@@ -59,43 +59,6 @@ def check_outliers(df, column):
     outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
     return len(outliers), lower_bound, upper_bound
 
-def summarize(df, dataset_name="Dataset"):
-    """Display summary statistics for numeric and categorical variables."""
-    numeric_vars, categorical_vars = categorize_var(df)
-
-    st.subheader(f"Summary Statistics")
-    num_tab, cat_tab = st.tabs(["Numerical Variables", "Categorical Variables"])
-
-    # Numerical Analysis
-    with num_tab:
-        st.subheader("Numerical Variables")
-        if len(numeric_vars) > 0: 
-            # Display descriptive statistics
-            st.dataframe(df[numeric_vars].describe().transpose().round(2))
-            st.subheader("Outlier Detection")
-            for num_var in numeric_vars:
-                outliers_count, lower, upper = check_outliers(df, num_var)
-        else:
-            st.write("No numerical variables found in the dataset.")
-
-    # Categorical Analysis
-    with cat_tab:
-        st.subheader("Categorical Variables")
-        if len(categorical_vars) > 0:  
-            unique_vals = df[categorical_vars].nunique()
-            st.write("Unique Value Counts")
-            st.dataframe(unique_vals.to_frame(name="Unique Values"))
-
-            selected_cat_var = st.selectbox(
-                "Select a categorical variable to analyze:", categorical_vars
-            )
-            if selected_cat_var:
-                value_counts = df[selected_cat_var].value_counts()
-                st.markdown(f"### Value Counts for `{selected_cat_var}`")
-                st.bar_chart(value_counts)
-        else:
-            st.write("No categorical variables found in the dataset.")
-
 def display_features(features):
     """Display dataset feature descriptions."""
     for feature in features:
@@ -143,7 +106,19 @@ with bike_tab:
     elif step == "🧹 Data Cleaning":
         st.subheader("🧹 Data Cleaning")
         st.markdown("Based on the data quality checks, we will now clean the dataset.")
+        
         st.markdown("1. **Data Type Conversion**")
+        
+        # Cleaning Process
+        with st.expander("🛠 Cleaning Steps Taken"):
+            st.markdown("""
+            - Converted `Start date` and `End date` to `datetime`.
+            - Created `date` column for merging with weather data.
+            - Converted `Total duration (ms)` to minutes.
+            - Removed redundant columns like `Total duration`.
+            - Checked consistency between station names and numbers.
+            """)
+
         st.markdown("2. **Feature Engineering**")
         st.markdown("3. **Handling Missing Data**")
         st.markdown("4. **Dropping Redundant Columns**")
@@ -152,8 +127,36 @@ with bike_tab:
 
     else:
         # Cleaned Bike Data
-        st.subheader("✅ Cleaned Bike Data")
-        summarize(bike_0, "Bike Dataset")
+        st.subheader("✅ Cleaned Bike Data: Summary Statistics")
+        numeric_vars, categorical_vars = categorize_var(bike_0)
+        num_tab, cat_tab = st.tabs(["Numerical Variables", "Categorical Variables"])
+
+        # Numerical Analysis
+        with num_tab:
+            st.subheader("Numerical Variables")
+            if len(numeric_vars) > 0: 
+                # Display descriptive statistics
+                st.dataframe(bike_0[numeric_vars].describe().transpose().round(0))
+                st.subheader("Outlier Detection")
+                for num_var in numeric_vars:
+                    outliers_count, lower, upper = check_outliers(bike_0, num_var)
+            else:
+                st.write("No numerical variables found in the dataset.")
+
+        # Categorical Analysis
+        with cat_tab:
+            st.subheader("Categorical Variables")
+            if len(categorical_vars) > 0:  
+                unique_vals = bike_0[categorical_vars].nunique()
+                st.dataframe(unique_vals.to_frame(name="Unique Values").transpose().style.format("{:,}").set_properties(**{'text-align': 'center'}).set_table_styles([dict(selector='th', props=[('text-align', 'center')])]))
+
+                selected_cat_var = st.selectbox(
+                    "Select a categorical variable to analyze:", categorical_vars, key="bike_selected_cat"
+                )
+                if selected_cat_var:
+                    value_counts = bike_0[selected_cat_var].value_counts()
+                    st.markdown(f"### Value Counts for `{selected_cat_var}`")
+                    st.bar_chart(value_counts)
 
 # --- Weather Data ---
 with weather_tab:
@@ -184,6 +187,15 @@ with weather_tab:
     elif step == "🧹 Data Cleaning":
         st.subheader("🧹 Data Cleaning")
         st.markdown("Based on the data quality checks, we will now clean the dataset.")
+
+        # Cleaning Process
+        with st.expander("🛠 Cleaning Steps Taken"):
+            st.markdown("""
+            - Converted `date` column to `datetime`.
+            - Normalized numerical columns (e.g., temperature, wind speed).
+            - Mapped weather codes to readable descriptions.
+            """)
+
         st.markdown("1. **Data Type Conversion**")
         st.markdown("2. **Feature Engineering**")
         st.markdown("3. **Handling Missing Data**")
@@ -192,8 +204,22 @@ with weather_tab:
 
     else:
         # Cleaned Weather Data
-        st.subheader("✅ Cleaned Weather Data ")
-        summarize(weather_0, "Weather Dataset")
+        st.subheader("✅ Cleaned Weather Data: Summary Statistics ")
+        numeric_vars, categorical_vars = categorize_var(weather_0)
+        num_tab, cat_tab = st.tabs(["Numerical Variables", "Categorical Variables"])
+
+        # Numerical Analysis
+        with num_tab:
+            st.subheader("Numerical Variables")
+            if len(numeric_vars) > 0: 
+                # Display descriptive statistics
+                st.dataframe(weather_0[numeric_vars].describe().transpose().round(0))
+                st.subheader("Outlier Detection")
+                for num_var in numeric_vars:
+                    outliers_count, lower, upper = check_outliers(weather_0, num_var)
+                else:
+                    st.write("No numerical variables found in the dataset.")
+
 
 # --- Combined Data ---
 with combined_tab:
@@ -202,11 +228,78 @@ with combined_tab:
                 "This integration includes time-related and weather-based features, "
                 "setting the stage for exploratory data analysis (EDA) and predictive modeling.")
     
+    st.markdown("### Steps in Merging:")
+    with st.expander("🔗 Merge Workflow"):
+        st.markdown("""
+        1. Ensure consistent datetime formats in both datasets.
+        2. Align granularity to hourly data (round to nearest hour).
+        3. Perform an inner join on the `Date` column.
+        4. Validate the merged dataset for missing or inconsistent rows.
+        """)
+
     if step == "📋 Original Data":
         st.subheader("📋 Combined Dataset")
 
     elif step == "🧹 Data Cleaning":
         st.write("Let's clean the combined dataset.")
 
-    else:
-        st.write("The combined dataset is ready for analysis.")
+        st.markdown("### Features Added:")
+        with st.expander("🎨 Feature Engineering Highlights"):
+            st.markdown("""
+            - **Time-Based Features**:
+                - `Day of Week`: Weekday or weekend.
+                - `Hour of Day`: Morning, afternoon, or evening.
+            - **Weather-Based Features**:
+                - `Temperature Category`: Cold, mild, or hot.
+                - `Wind Speed Category`: Calm or windy.
+            - **Combined Metrics**:
+                - Bike counts categorized by weather conditions.
+            """)
+        # Combined Data
+        with st.expander("✅ Combined Dataset"):
+            st.dataframe(combined_data.head())  # Combined data
+            st.markdown(f"Rows: **{combined_data.shape[0]:,}**, Columns: **{combined_data.shape[1]}**")
+            st.markdown("""
+            **New Features Added:**
+            - Day of Week
+            - Time of Day
+            - Is Weekend
+            """)
+
+    else:        
+        # Cleaned Bike Data
+        st.subheader("✅ Ready Data: Summary Statistics")
+        numeric_vars, categorical_vars = categorize_var(bike_0)
+        num_tab, cat_tab = st.tabs(["Numerical Variables", "Categorical Variables"])
+
+        # Numerical Analysis
+        with num_tab:
+            st.subheader("Numerical Variables")
+            if len(numeric_vars) > 0: 
+                # Display descriptive statistics
+                st.dataframe(bike_0[numeric_vars].describe().transpose().round(0))
+                st.subheader("Outlier Detection")
+                for num_var in numeric_vars:
+                    outliers_count, lower, upper = check_outliers(bike_0, num_var)
+            else:
+                st.write("No numerical variables found in the dataset.")
+
+        # Categorical Analysis
+        with cat_tab:
+            st.subheader("Categorical Variables")
+            if len(categorical_vars) > 0:  
+                unique_vals = bike_0[categorical_vars].nunique()
+                st.dataframe(unique_vals.to_frame(name="Unique Values").transpose().style.format("{:,}").set_properties(**{'text-align': 'center'}).set_table_styles([dict(selector='th', props=[('text-align', 'center')])]))
+
+                selected_cat_var = st.selectbox(
+                    "Select a categorical variable to analyze:", categorical_vars, key="combined_selected_cat"
+                )
+                if selected_cat_var:
+                    value_counts = bike_0[selected_cat_var].value_counts()
+                    st.markdown(f"### Value Counts for `{selected_cat_var}`")
+                    st.bar_chart(value_counts)
+
+# Footer
+st.markdown("### Ready to Explore")
+st.write("With clean and merged data, we're set to uncover insights about London's bike-sharing trends!")
+
