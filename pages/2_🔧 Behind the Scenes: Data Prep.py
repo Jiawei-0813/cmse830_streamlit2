@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(layout="wide", 
                page_title="🔧 Behind the Scenes: Data Prep"
@@ -112,82 +113,186 @@ with bike_tab:
         # Copy of the original data for cleaning
         bike_1 = bike_0.copy()
 
-        st.markdown("#### 1. Date and Time Adjustments")
-        # Convert date columns to datetime
-        bike_1["Start date"] = pd.to_datetime(bike_1["Start date"])
-        bike_1["End date"] = pd.to_datetime(bike_1["End date"])
+        with st.expander("#### 1. Date and Time Adjustments"):
+            # Convert date columns to datetime
+            bike_1["Start date"] = pd.to_datetime(bike_1["Start date"])
+            bike_1["End date"] = pd.to_datetime(bike_1["End date"])
 
-        # Extract date for merging
-        bike_1['Date'] = bike_1['Start date'].dt.floor('T') # Round down to the nearest minute
+            # Extract date for merging
+            bike_1['Date'] = bike_1['Start date'].dt.floor('T') # Round down to the nearest minute
 
-        # Convert duration to minutes
-        bike_1['Total duration (m)'] = round(bike_1['Total duration (ms)'] / 60000, 0)
+            # Convert duration to minutes
+            bike_1['Total duration (m)'] = round(bike_1['Total duration (ms)'] / 60000, 0)
 
-        # Check the changes
-        st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].head())
-        st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].dtypes)
+            # Check the changes
+            st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].head())
+            st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].dtypes)
 
-        # Drop redundant columns
-        bike_1.drop(columns=['Start date', 'End date', 'Total duration (m)', 'Total duration (ms)'], inplace=True)
+            # Drop redundant columns
+            bike_1.drop(columns=['Start date', 'End date', 'Total duration (m)', 'Total duration (ms)'], inplace=True)
 
-        st.markdown("#### 2. Station Consistency")
-        # Consistency station names and numbers
-        st.write("Unique values for Station Variables:")
-        st.dataframe(bike_1[['Start station', 'Start station number', 'End station', 'End station number']].nunique().to_frame(name="Unique Values").transpose())
+        with st.expander("#### 2. Station Consistency & Popularity"):
+            # Check consistency between station names and numbers
+            st.subheader("Consistency Check")
+            station_mapping = bike_1.groupby(['Start station number', 'Start station']).size().reset_index(name='Count')
+            inconsistent_stations = station_mapping.groupby('Start station number').filter(lambda x: x['Start station'].nunique() > 1)
 
-        # Group by name and number to identify mismatches
-        station_mapping = bike_1.groupby(['Start station', 'Start station number']).size().reset_index(name='Count')
+            if not inconsistent_stations.empty:
+                st.warning("Inconsistencies found in station name and number mappings:")
+                st.dataframe(inconsistent_stations)
+            else:
+                st.success("Station name and number mappings are consistent.")
+            
+            # Unique values for station-related variables
+            cols1, cols2, cols3 = st.columns(3)
+            with cols1:
+                unique_start_stations = bike_1['Start station'].nunique()
+                st.metric(label="Unique Start Stations", value=unique_start_stations)
+            with cols2:
+                unique_end_stations = bike_1['End station'].nunique()
+                st.metric(label="Unique End Stations", value=unique_end_stations)
+            with cols3:
+                # Add a column for same start and end station
+                bike_1['Same Start-End'] = (bike_1['Start station'] == bike_1['End station']) & \
+                                        (bike_1['Start station number'] == bike_1['End station number'])
 
-        # Highlight inconsistencies
-        inconsistent_stations = station_mapping.groupby('Start station number').filter(lambda x: x['Start station'].nunique() > 1)
-        if not inconsistent_stations.empty:
-            st.warning(f"Inconsistent mappings found:\n{inconsistent_stations}")
-        else:
-            st.success("No inconsistencies found in station mappings.")
-        
-        st.subheader("🏙️ Station Popularity Analysis")
+                # Display metric for trips with same start and end station
+                same_start_end_count = bike_1['Same Start-End'].sum()
+                st.metric(label="Trips with Same Start and End Station", value=same_start_end_count)
 
-        # Station selection
-        station_option = st.radio("Analyze station type:", ["Start station", "End station"])
+            # Display same start-end station sample
+            st.subheader("TOP: Same Start-End Trips")
+            st.dataframe(bike_1[['Start station', 'End station']].sample(10))
 
-        # Slider for selecting the number of top stations
-        top_n = st.slider(f"Select top {station_option}s:", min_value=1, max_value=50, value=10)
+            # Station Popularity Analysis
+            st.subheader("🏙️ Station Popularity Analysis")
+            st.markdown("""
+            Explore the most popular start and end stations to identify key hubs in London's bike-sharing network.
+            """)
 
-        # Compute busiest stations
-        top_stations = bike_0[station_option].value_counts().head(top_n).reset_index()
-        top_stations.columns = [station_option, "Count"]
+            # Station selection
+            station_option = st.radio("Analyze station type:", ["Start station", "End station", "Same Start-End", "Either Start or End"])
 
-        # Bar plot for station popularity
-        fig_station = px.bar(
-            top_stations,
-            x="Count",
-            y=station_option,
-            orientation="h",
-            title=f"The Busiest {top_n} {station_option}s",
-            labels={"Count": "Number of Bike-Sharing", station_option: "Station Name"},
-            color=station_option,
-            color_discrete_sequence=px.colors.qualitative.Set2,
-        )
-        st.plotly_chart(fig_station)
+            # Slider for selecting the number of top stations
+            top_n = st.slider(f"Select top {station_option}s:", min_value=1, max_value=50, value=10)
 
-        # Calculate percentage of trips covered
-        total_trips = bike_0.shape[0]
-        percentage = (top_stations["Count"].sum() / total_trips) * 100
+            if station_option == "Same Start-End":
+                # Filter data for trips with the same start and end stations
+                same_start_end_data = bike_1[bike_1["Same Start-End"]]
+                top_stations = same_start_end_data["Start station"].value_counts().head(top_n).reset_index()
+                top_stations.columns = ["Station Name", "Count"]
+                title = f"Most Popular Same Start-End Stations"
+            else:
+                # Handle "Either Start or End" option
+                if station_option == "Either Start or End":
+                    start_counts = bike_1["Start station"].value_counts()
+                    end_counts = bike_1["End station"].value_counts()
+                    combined_counts = start_counts.add(end_counts, fill_value=0).sort_values(ascending=False).head(top_n).reset_index()
+                    combined_counts.columns = ["Station Name", "Count"]
+                    top_stations = combined_counts
+                    title = f"Top {top_n} Stations by Either Start or End"
+                else:
+                    # For Start or End Station
+                    top_stations = bike_1[station_option].value_counts().head(top_n).reset_index()
+                    top_stations.columns = [station_option, "Count"]
+                    title = f"The Busiest {top_n} {station_option}s"
 
-        # Combine the explanation of the plot with the percentage calculation
-        st.markdown(f"""
-        This plot shows the **Number of Bike-Sharing Trips** (x-axis) for the **Busiest {top_n} {station_option.lower()}s** (y-axis).
-        - Message: These busiest {station_option.lower()}s represent **{percentage:.2f}%** of the total bike-sharing trips.
-        """)
+            # Create a bar plot for station popularity
+            fig_station = px.bar(
+                top_stations,
+                x="Count",
+                y="Station Name" if station_option in ["Same Start-End", "Either Start or End"] else station_option,
+                orientation="h",
+                title=title,
+                labels={"Count": "Number of Bike-Sharing", station_option: "Station Name"},
+                color="Station Name" if station_option in ["Same Start-End", "Either Start or End"] else station_option,
+                color_discrete_sequence=px.colors.qualitative.Set2,
+            )
 
-        st.markdown("**🛠 Suggested Feature Engineering:**")
-        st.markdown("""
-        - **Clustering**: Use k-means or hierarchical clustering to group stations into clusters (e.g., high, medium, low usage).
-        - **Encoding**: One-hot encode top 10 stations and group remaining stations into an "Other" category.
-        """)
+            # Update layout to hide the legend
+            fig_station.update_layout(showlegend=False)
 
-        # Convert bike model to categorical
-        bike_1['Bike model'] = bike_1['Bike model'].astype('category')
+            # Display the plot in Streamlit
+            st.plotly_chart(fig_station)
+
+            # Calculate percentage of trips covered
+            if station_option == "Same Start-End":
+                total_trips = same_start_end_data.shape[0]
+            else:
+                total_trips = bike_1.shape[0]
+            percentage = (top_stations["Count"].sum() / total_trips) * 100
+
+            # Explanation of the plot
+            st.markdown(f"""
+            This plot shows the **Number of Bike-Sharing Trips** (x-axis) for the **Busiest {top_n} {station_option.lower()}s** (y-axis).
+            - It highlights the top stations where bike-sharing activity is the highest.
+            - These busiest {station_option.lower()}s represent **{percentage:.2f}%** of the total bike-sharing trips.
+            """)
+
+            st.markdown("**🛠 Suggested Feature Engineering:**")
+            st.markdown("""
+            - **Clustering**: Use k-means or hierarchical clustering to group stations into clusters (e.g., high, medium, low usage).
+            - **Encoding**: One-hot encode top 10 stations and group remaining stations into an "Other" category.
+            """)
+
+        with st.expander("#### 3. Bike Model Optimization"):
+            # Description and reasoning
+            st.markdown("The `Bike model` column has two categories: `CLASSIC` and `PBSC_EBIKE`. ")
+
+            # Bike model distribution counts
+            bike_model_counts = pd.Series({'CLASSIC': 716639, 'PBSC_EBIKE': 59888})
+            bike_model_df = bike_model_counts.reset_index()
+            bike_model_df.columns = ['Bike Model', 'Count']
+
+            # Display distribution
+            fig_pie = px.pie(
+                bike_model_df,
+                names='Bike Model',
+                values='Count',
+                title='Bike Model Distribution',
+                hole=0.5,
+                color_discrete_sequence=px.colors.qualitative.Set3,
+                color_discrete_map={'CLASSIC': '#1f77b4', 'PBSC_EBIKE': '#ff7f0e'},
+            )
+            fig_pie.update_traces(
+                textinfo='percent+label', 
+                textfont_size=12,
+                hovertemplate="<b>%{label}</b><br>Count: %{value}<br>Percent: %{percent}",
+            )
+            fig_pie.update_layout(
+                title={'text': 'Bike Model Distribution', 'x': 0.5, 'xanchor': 'center'},
+                showlegend=False
+            )
+            st.plotly_chart(fig_pie)
+
+            # Apply label encoding
+            st.subheader("Label Encoding")
+            st.markdown("""
+            With only two unique values, **label encoding** is the ideal for 
+            transforming categorical values into numerical representations:
+            - `CLASSIC` → 0
+            - `PBSC_EBIKE` → 1
+            """)
+
+            try:
+                le = LabelEncoder()
+                bike_1['Bike Model Encoded'] = le.fit_transform(bike_1['Bike model'])
+                st.success("Label encoding applied successfully!")
+                st.dataframe(bike_1[['Bike model', 'Bike Model Encoded']].head(10).T)
+
+                # Drop original column
+                bike_1.drop(columns=['Bike model'], inplace=True)
+                st.success("The original `Bike model` column has been dropped.")
+            except Exception as e:
+                st.error(f"Label encoding failed. Error: {e}")
+
+            # Explanation of benefits
+            st.markdown("""
+            **Why Optimize?**
+            - Reduces memory usage.
+            - Facilitates modeling by transforming categorical data into numeric format.
+            - Ensures compatibility with machine learning algorithms.
+            """)
 
     else:
         # Cleaned Bike Data
@@ -262,18 +367,37 @@ with weather_tab:
         # Copy of the original data for cleaning
         weather_1 = weather_0.copy()
 
-        # Convert date columns to datetime
-        weather_1["date"] = pd.to_datetime(weather_1["date"])
+        with st.expander("#### 1. Date and Time Adjustments"):
+            # Convert date columns to datetime
+            weather_1["date"] = pd.to_datetime(weather_1["date"])
 
-        # Remove timezone
-        weather_1["date"] = weather_1["date"].dt.tz_localize(None)
+            # Remove timezone
+            weather_1["date"] = weather_1["date"].dt.tz_localize(None)
 
-        # Extract date for merging
-        weather_1['Date'] = weather_1['date'].dt.floor('T')
+            # Extract date for merging
+            weather_1['Date'] = weather_1['date'].dt.floor('T')
 
-        # Map weather codes to descriptions
-
-
+        with st.expander("#### 2. Map Weather Codes"):
+            weather_code_mapping = {
+                0: "Clear Sky",
+                1: "Partly Cloudy",
+                2: "Cloudy",
+                3: "Overcast",
+                45: "Fog",
+                48: "Rime Fog",
+                51: "Drizzle",
+                53: "Moderate Drizzle",
+                55: "Heavy Drizzle",
+                61: "Slight Rain",
+                63: "Moderate Rain",
+                65: "Heavy Rain",
+                71: "Light Snow",
+                73: "Moderate Snow",
+                75: "Heavy Snow",
+                80: "Rain Showers",
+                95: "Thunderstorm",
+                96: "Thunderstorm with Hail"
+            }
 
     else:
         # Cleaned Weather Data
