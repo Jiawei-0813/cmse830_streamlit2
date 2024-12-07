@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(layout="wide", 
                page_title="🔧 Behind the Scenes: Data Prep"
@@ -65,7 +66,7 @@ def display_features(features):
         st.markdown(f"- {feature}")
 
 # --- Sidebar ---
-step = st.sidebar.selectbox("Go to", ["📋 Original Data", "🧹 Data Cleaning", "✅ Cleaned Data"])
+step = st.sidebar.selectbox("Go to", ["🧹 Data Cleaning", "✅ Cleaned Data"])
 
 # --- Main Content ---
 bike_tab, weather_tab, combined_tab = st.tabs(["🚴 Bike Dataset", "🌤️ Weather Dataset", "Combined Dataset"])
@@ -74,56 +75,119 @@ bike_tab, weather_tab, combined_tab = st.tabs(["🚴 Bike Dataset", "🌤️ Wea
 with bike_tab:
     st.header("🚴 Explore London Bike-Sharing Data")
 
-    if step == "📋 Original Data":
+    if step == "🧹 Data Cleaning":
         st.subheader("📋 Original Bike Data")
         st.dataframe(bike_0.head())
         st.markdown(f"""The original dataset contains **{bike_0.shape[0]:,}** rows and **{bike_0.shape[1]}** columns 
                     with both categorical and numerical features.""")
-            
-        if st.checkbox("Check Data Quality", key="bike_quality"):
-            cols1, cols2 = st.columns([1, 1.5])
-            with cols1:
+
+        st.markdown("### Data Quality Checks")
+        cols1, cols2 = st.columns(2)
+        with cols1:
+            st.write(bike_0.dtypes.to_frame('Data Types'))
+
+        with cols2:
+            if st.checkbox("Check for Duplicates", key="bike_duplicates"):
                 check_duplicates(bike_0)
-                st.write(bike_0.dtypes.to_frame('Data Types'))
-
-            with cols2:
+            if st.checkbox("Check for Missing Data", key="bike_missing"):
                 check_missing_data(bike_0)
-                st.write("**🛠 Suggested Adjustments**")
-                bike_suggestions = [
-                    "`Start date` and `End date`: Convert to `datetime` format.",
-                    "`Total duration (ms)`: Convert from milliseconds to minutes.",
-                    "`Total duration`: Redundant, can be dropped.",
-                    "`Bike model`: Convert to `category` type."
-                ]
-                display_features(bike_suggestions)
 
-                st.write("In addition:")
-                st.markdown("""
-                - Create a **`date`** column in `yyyy-mm-dd HH:MM` based on `Start date` for merging
-                - Check consistency between station names and station numbers
-                """)
+        st.divider()
         
-    elif step == "🧹 Data Cleaning":
         st.subheader("🧹 Data Cleaning")
         st.markdown("Based on the data quality checks, we will now clean the dataset.")
         
-        st.markdown("1. **Data Type Conversion**")
-        
-        # Cleaning Process
-        with st.expander("🛠 Cleaning Steps Taken"):
-            st.markdown("""
-            - Converted `Start date` and `End date` to `datetime`.
-            - Created `date` column for merging with weather data.
-            - Converted `Total duration (ms)` to minutes.
-            - Removed redundant columns like `Total duration`.
-            - Checked consistency between station names and numbers.
-            """)
+        # Cleaning Process for Bike Data
+        with st.expander("🔧 Data Adjustments and Cleaning Steps"):
+            cleaning_bike = [
+                "Converted `Start date` and `End date`: Changed to `datetime` format for consistency and analysis.",
+                "Created `date` column: Extracted from `Start date` in `yyyy-mm-dd HH:MM` format for merging datasets.",
+                "Converted `Total duration (ms)`: Transformed milliseconds to minutes for better interpretability.",
+                "Dropped redundant columns: Removed `Total duration` as it duplicates information.",
+                "Ensured consistency: Verified and aligned station names and station numbers.",
+                "Optimized `Bike model`: Converted to categorical data type for better memory usage."
+            ]
+            display_features(cleaning_bike)
 
-        st.markdown("2. **Feature Engineering**")
-        st.markdown("3. **Handling Missing Data**")
-        st.markdown("4. **Dropping Redundant Columns**")
-        st.markdown("5. **Consistency Checks**")
-        st.markdown("6. **Save the Cleaned Dataset**")
+        # Copy of the original data for cleaning
+        bike_1 = bike_0.copy()
+
+        st.markdown("#### 1. Date and Time Adjustments")
+        # Convert date columns to datetime
+        bike_1["Start date"] = pd.to_datetime(bike_1["Start date"])
+        bike_1["End date"] = pd.to_datetime(bike_1["End date"])
+
+        # Extract date for merging
+        bike_1['Date'] = bike_1['Start date'].dt.floor('T') # Round down to the nearest minute
+
+        # Convert duration to minutes
+        bike_1['Total duration (m)'] = round(bike_1['Total duration (ms)'] / 60000, 0)
+
+        # Check the changes
+        st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].head())
+        st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].dtypes)
+
+        # Drop redundant columns
+        bike_1.drop(columns=['Start date', 'End date', 'Total duration (m)', 'Total duration (ms)'], inplace=True)
+
+        st.markdown("#### 2. Station Consistency")
+        # Consistency station names and numbers
+        st.write("Unique values for Station Variables:")
+        st.dataframe(bike_1[['Start station', 'Start station number', 'End station', 'End station number']].nunique().to_frame(name="Unique Values").transpose())
+
+        # Group by name and number to identify mismatches
+        station_mapping = bike_1.groupby(['Start station', 'Start station number']).size().reset_index(name='Count')
+
+        # Highlight inconsistencies
+        inconsistent_stations = station_mapping.groupby('Start station number').filter(lambda x: x['Start station'].nunique() > 1)
+        if not inconsistent_stations.empty:
+            st.warning(f"Inconsistent mappings found:\n{inconsistent_stations}")
+        else:
+            st.success("No inconsistencies found in station mappings.")
+        
+        st.subheader("🏙️ Station Popularity Analysis")
+
+        # Station selection
+        station_option = st.radio("Analyze station type:", ["Start station", "End station"])
+
+        # Slider for selecting the number of top stations
+        top_n = st.slider(f"Select top {station_option}s:", min_value=1, max_value=50, value=10)
+
+        # Compute busiest stations
+        top_stations = bike_0[station_option].value_counts().head(top_n).reset_index()
+        top_stations.columns = [station_option, "Count"]
+
+        # Bar plot for station popularity
+        fig_station = px.bar(
+            top_stations,
+            x="Count",
+            y=station_option,
+            orientation="h",
+            title=f"The Busiest {top_n} {station_option}s",
+            labels={"Count": "Number of Bike-Sharing", station_option: "Station Name"},
+            color=station_option,
+            color_discrete_sequence=px.colors.qualitative.Set2,
+        )
+        st.plotly_chart(fig_station)
+
+        # Calculate percentage of trips covered
+        total_trips = bike_0.shape[0]
+        percentage = (top_stations["Count"].sum() / total_trips) * 100
+
+        # Combine the explanation of the plot with the percentage calculation
+        st.markdown(f"""
+        This plot shows the **Number of Bike-Sharing Trips** (x-axis) for the **Busiest {top_n} {station_option.lower()}s** (y-axis).
+        - Message: These busiest {station_option.lower()}s represent **{percentage:.2f}%** of the total bike-sharing trips.
+        """)
+
+        st.markdown("**🛠 Suggested Feature Engineering:**")
+        st.markdown("""
+        - **Clustering**: Use k-means or hierarchical clustering to group stations into clusters (e.g., high, medium, low usage).
+        - **Encoding**: One-hot encode top 10 stations and group remaining stations into an "Other" category.
+        """)
+
+        # Convert bike model to categorical
+        bike_1['Bike model'] = bike_1['Bike model'].astype('category')
 
     else:
         # Cleaned Bike Data
@@ -161,46 +225,55 @@ with bike_tab:
 # --- Weather Data ---
 with weather_tab:
     st.header("🌤️ Explore London Weather Data")
-
-    if step == "📋 Original Data":
+  
+    if step == "🧹 Data Cleaning":
         st.subheader("📋 Original Weather Data")
         st.dataframe(weather_0.head())
         st.markdown(f"""The original dataset contains **{weather_0.shape[0]:,}** rows and **{weather_0.shape[1]}** 
                     columns with all numerical features.""")
 
-        if st.checkbox("Check Data Quality", key="weather_quality"):
-            col1, col2 = st.columns([1, 1.6])
-            with col1:
-                check_duplicates(weather_0)
-                st.write(weather_0.dtypes.to_frame("Data Types"))
+        st.markdown("### Data Quality Checks")
+        cols1, cols2 = st.columns(2)
+        with cols1:
+            st.write(weather_0.dtypes.to_frame('Data Types'))
 
-            with col2:
+        with cols2:
+            if st.checkbox("Check for Duplicates", key="weather_duplicates"):
+                check_duplicates(weather_0)
+            if st.checkbox("Check for Missing Data", key="weather_missing"):
                 check_missing_data(weather_0)
-                st.markdown("**🛠 Suggested Adjustments:**")
-                weather_suggestions = [
-                    "`date`: Remove timezone information.",
-                    "`weather_code`: Map numeric codes to descriptions.",
-                    "`Date`: Extracted from `date` in `yyyy-mm-dd HH:MM` format for merging."
-                ]
-                display_features(weather_suggestions)
+
+        st.divider()
         
-    elif step == "🧹 Data Cleaning":
         st.subheader("🧹 Data Cleaning")
         st.markdown("Based on the data quality checks, we will now clean the dataset.")
+        
+        # Cleaning Process for Weather Data
+        with st.expander("🔧 Data Adjustments and Cleaning Steps"):
+            cleaning_weather = [
+                "Converted `date`: Changed to `datetime` format for consistent time-based analysis.",
+                "Removed timezone: Standardized time data by eliminating timezone differences.",
+                "Extracted `Date`: Created a `yyyy-mm-dd HH:MM` format for merging with bike data.",
+                "Mapped `weather_code`: Translated numeric codes into readable weather descriptions.",
+                "Normalized numerical columns: Scaled values like temperature and wind speed for better comparisons."
+            ]
+            display_features(cleaning_weather)
+        
+        # Copy of the original data for cleaning
+        weather_1 = weather_0.copy()
 
-        # Cleaning Process
-        with st.expander("🛠 Cleaning Steps Taken"):
-            st.markdown("""
-            - Converted `date` column to `datetime`.
-            - Normalized numerical columns (e.g., temperature, wind speed).
-            - Mapped weather codes to readable descriptions.
-            """)
+        # Convert date columns to datetime
+        weather_1["date"] = pd.to_datetime(weather_1["date"])
 
-        st.markdown("1. **Data Type Conversion**")
-        st.markdown("2. **Feature Engineering**")
-        st.markdown("3. **Handling Missing Data**")
-        st.markdown("4. **Dropping Redundant Columns**")
-        st.markdown("5. **Save the Cleaned Dataset**")
+        # Remove timezone
+        weather_1["date"] = weather_1["date"].dt.tz_localize(None)
+
+        # Extract date for merging
+        weather_1['Date'] = weather_1['date'].dt.floor('T')
+
+        # Map weather codes to descriptions
+
+
 
     else:
         # Cleaned Weather Data
