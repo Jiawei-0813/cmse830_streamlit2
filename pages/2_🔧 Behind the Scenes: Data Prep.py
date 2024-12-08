@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import MinMaxScaler
+
+
 
 st.set_page_config(layout="wide", 
                page_title="🔧 Behind the Scenes: Data Prep"
@@ -99,7 +105,7 @@ with bike_tab:
         st.markdown("Based on the data quality checks, we will now clean the dataset.")
         
         # Cleaning Process for Bike Data
-        with st.expander("🔧 Data Adjustments and Cleaning Steps"):
+        with st.expander("🔧 **Data Adjustments and Cleaning Steps**", expanded = True):
             cleaning_bike = [
                 "Converted `Start date` and `End date`: Changed to `datetime` format for consistency and analysis.",
                 "Created `date` column: Extracted from `Start date` in `yyyy-mm-dd HH:MM` format for merging datasets.",
@@ -113,7 +119,7 @@ with bike_tab:
         # Copy of the original data for cleaning
         bike_1 = bike_0.copy()
 
-        with st.expander("#### 1. Date and Time Adjustments"):
+        with st.expander("#### 1. Date Adjustments"):
             # Convert date columns to datetime
             bike_1["Start date"] = pd.to_datetime(bike_1["Start date"])
             bike_1["End date"] = pd.to_datetime(bike_1["End date"])
@@ -121,17 +127,82 @@ with bike_tab:
             # Extract date for merging
             bike_1['Date'] = bike_1['Start date'].dt.floor('T') # Round down to the nearest minute
 
-            # Convert duration to minutes
-            bike_1['Total duration (m)'] = round(bike_1['Total duration (ms)'] / 60000, 0)
-
             # Check the changes
-            st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].head())
-            st.write(bike_1[['Start date', 'End date', 'Date', 'Total duration (ms)', 'Total duration (m)']].dtypes)
+            st.write("**Updated columns check**:")
+            st.write(bike_1[['Start date', 'End date', 'Date']].head())
+            st.table(bike_1[['Start date', 'End date', 'Date']].dtypes.to_frame('Data Types').transpose())
 
             # Drop redundant columns
-            bike_1.drop(columns=['Start date', 'End date', 'Total duration (m)', 'Total duration (ms)'], inplace=True)
+            bike_1.drop(columns=['Start date', 'End date'], inplace=True)
+            st.success("Redundant variables has been dropped after checking.")
+        
+        with st.expander("#### 2. Total Duration Analysis"):
+            # Step 1: Convert duration to minutes and remove zero values
+            bike_1['Total duration (m)'] = round(bike_1['Total duration (ms)'] / 60000, 0)
+            st.write(bike_1['Total duration (m)'].describe().round(2).to_frame().T)
 
-        with st.expander("#### 2. Station Consistency & Popularity"):
+            # Number of trips with durations less than 1 minute
+            less_than_1_min_count = (bike_1['Total duration (m)'] < 1).sum()
+            less_than_1_min_percent = (less_than_1_min_count / bike_1.shape[0]) * 100
+
+            st.write("**Initial Observations:**")
+            initial_observations = [
+                f"Maximum trip duration is {bike_1['Total duration (m)'].max():.0f} minutes, indicating potential outliers.",
+                f"{less_than_1_min_count:,} trips ({less_than_1_min_percent:.2f}%) have durations less than 1 minute."
+                f"A standard deviation of {bike_1['Total duration (m)'].std():.0f} minutes compared to a mean of {bike_1['Total duration (m)'].mean():.0f} minutes indicates highly dispersed trip durations."
+            ]
+            display_features(initial_observations)
+
+            # Remove trips with durations less than 1 minute
+            bike_2 = bike_1[bike_1['Total duration (m)'] > 0]
+            st.success("Trips with duration less than 1 minute have been removed.")
+
+            # Step 2: Outlier detection and removal using IQR approach
+            outliers_count, lower_bound, upper_bound = check_outliers(bike_1, 'Total duration (m)')
+            bike_2 = bike_1[(bike_1['Total duration (m)'] >= lower_bound) &
+                            (bike_1['Total duration (m)'] <= upper_bound)]
+            st.success(f"{outliers_count} outliers removed using IQR.")
+
+            # Step 3: Min-Max Scaling
+            scaler = MinMaxScaler()
+            bike_2['Total duration (m)_scaled'] = scaler.fit_transform(bike_2[['Total duration (m)']])
+            st.success("Min-Max scaling applied successfully!")
+
+            # Step 4: Create Subplots for Before and After Comparison
+            fig = make_subplots(rows=1, cols=2, subplot_titles=(
+                "Raw Data", 
+                "After Cleaning"
+            ))
+
+            # Boxplot for Original Data
+            fig.add_trace(
+                go.Box(y=bike_1['Total duration (m)'], name="Before Cleaning", marker_color="skyblue"),
+                row=1, col=1
+            )
+
+            # Boxplot for Cleaned Data
+            fig.add_trace(
+                go.Box(y=bike_2['Total duration (m)'], name="After Cleaning", marker_color="lightgreen"),
+                row=1, col=2
+            )
+
+            fig.update_layout(
+                title="Boxplot Comparison: Before and After Outlier Removal",
+                height=600,
+                width=1000,
+                template="simple_white"
+            )
+
+            st.plotly_chart(fig)
+
+            # Step 5: Insights from Visualizations
+            st.markdown("""
+            ### Insights from Visualizations
+            2. **After Cleaning**: The cleaned dataset focuses on realistic trip durations, improving data reliability.
+            3. **Min-Max Scaling**: Compresses the range to [0, 1], preparing the data for machine learning.
+            """)
+
+        with st.expander("#### 3. Station Consistency & Popularity"):
             # Check consistency between station names and numbers
             st.subheader("Consistency Check")
             station_mapping = bike_1.groupby(['Start station number', 'Start station']).size().reset_index(name='Count')
@@ -141,6 +212,7 @@ with bike_tab:
                 st.warning("Inconsistencies found in station name and number mappings:")
                 st.dataframe(inconsistent_stations)
             else:
+                bike_1.drop(columns=['Start station number', 'End station number'], inplace=True)
                 st.success("Station name and number mappings are consistent.")
             
             # Unique values for station-related variables
@@ -235,10 +307,7 @@ with bike_tab:
             - **Encoding**: One-hot encode top 10 stations and group remaining stations into an "Other" category.
             """)
 
-        with st.expander("#### 3. Bike Model Optimization"):
-            # Description and reasoning
-            st.markdown("The `Bike model` column has two categories: `CLASSIC` and `PBSC_EBIKE`. ")
-
+        with st.expander("#### 4. Bike Model Optimization"):
             # Bike model distribution counts
             bike_model_counts = pd.Series({'CLASSIC': 716639, 'PBSC_EBIKE': 59888})
             bike_model_df = bike_model_counts.reset_index()
@@ -265,11 +334,10 @@ with bike_tab:
             )
             st.plotly_chart(fig_pie)
 
-            # Apply label encoding
+            # Label Encoding rationale
             st.subheader("Label Encoding")
-            st.markdown("""
-            With only two unique values, **label encoding** is the ideal for 
-            transforming categorical values into numerical representations:
+            st.markdown("""The `Bike model` column has two unique categories: `CLASSIC` and `PBSC_EBIKE`, 
+            **label encoding** is the ideal for transforming categorical values into numerical representations:
             - `CLASSIC` → 0
             - `PBSC_EBIKE` → 1
             """)
@@ -278,20 +346,20 @@ with bike_tab:
                 le = LabelEncoder()
                 bike_1['Bike Model Encoded'] = le.fit_transform(bike_1['Bike model'])
                 st.success("Label encoding applied successfully!")
-                st.dataframe(bike_1[['Bike model', 'Bike Model Encoded']].head(10).T)
+                st.dataframe(bike_1[['Bike model', 'Bike Model Encoded']].tail(6).T)
 
                 # Drop original column
-                bike_1.drop(columns=['Bike model'], inplace=True)
-                st.success("The original `Bike model` column has been dropped.")
+                bike_1.drop(columns=['Bike model', 'Bike number'], inplace=True)
+                st.success("`Bike model` was successfully encoded and the original column has been dropped.")
             except Exception as e:
                 st.error(f"Label encoding failed. Error: {e}")
 
             # Explanation of benefits
             st.markdown("""
             **Why Optimize?**
-            - Reduces memory usage.
-            - Facilitates modeling by transforming categorical data into numeric format.
-            - Ensures compatibility with machine learning algorithms.
+            - Reduces memory usage
+            - Transforms categorical data into numeric format
+            - Ensures compatibility with machine learning algorithms
             """)
 
     else:

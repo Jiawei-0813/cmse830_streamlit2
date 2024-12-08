@@ -3,20 +3,28 @@ import streamlit as st
 st.set_page_config(layout="wide", page_title="Ride the Weather: London Bike-Weather Insights")
 
 # --- Title and Welcome Section ---
-st.markdown("<h1 style='text-align: left; color: #1E90FF;'> Ride the Weather</h1>", unsafe_allow_html=True)
+col1, col2 = st.columns([1, 3], gap="large")
+
+with col1:
+   st.image("https://media0.giphy.com/media/20NUvxKjMv5YkMykZS/giphy.gif?cid=ecf05e470hfz4hijiz5cjjrlbrgk6whdnsvtn7kn6z90vzms&ep=v1_stickers_search&rid=giphy.gif&ct=s")
+
+with col2:
+   st.markdown("<h1 style='text-align: left; color: #1E90FF;'> Ride the Weather</h1>", unsafe_allow_html=True)
+
+   st.markdown("<div style='display: flex; align-items: center; height: 100%;'><h3>Welcome to your one-stop destination to explore London's bike-sharing trends!</h2></div>", unsafe_allow_html=True)
+
 st.divider()
-st.header("""Welcome to your one-stop destination to explore London's bike-sharing trends! """)
 
 # --- Key Highlights Section ---
-st.markdown("Here are some exciting stats:")
+st.markdown("<h3 style='font-size: 26px; color: #FF4500;'>Do you know in London August 2023:</h3>", unsafe_allow_html=True)
 highlight_col1, highlight_col2, highlight_col3 = st.columns(3)
 
 with highlight_col1:
-   st.metric(label=" 🚴 Total Rides", value="776,527", delta="15% ↑ from July")
+   st.metric(label=" **🚴 Total Rides**", value="776,527")
 with highlight_col2:
-   st.metric(label="📍 Busiest Station", value="Hyde Park Corner")
+   st.metric(label="📍 **Busiest Station**", value="Hyde Park Corner")
 with highlight_col3:
-   st.metric(label="⏰ Most Active Hour", value="5:00 PM - 6:00 PM")
+   st.metric(label="⏰ **Most Active Hour**", value="5:00 PM - 6:00 PM")
 
 st.divider()
 
