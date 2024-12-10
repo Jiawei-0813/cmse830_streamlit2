@@ -30,13 +30,13 @@ st.divider()
 
 # --- Sidebar for multipage navigation ---
 intro_section = st.sidebar.radio("Go to", 
-                                 ["🚀 Why Bike-sharing Analysis?", 
+                                 ["🚴‍♂️ Why Bike-sharing Analysis?", 
                                   "🌞 Why August?", 
                                   "🚴‍♂️ Let’s Ride the Weather Together!"])
 
 # --- Why This App Section ---
-if intro_section == "🚀 Why Bike-sharing Analysis?":
-   st.header("🚀 Why London Bike-sharing Analysis?")
+if intro_section == "🚴‍♂️ Why Bike-sharing Analysis?":
+   st.header("🚴‍♂️ Why London Bike-sharing Analysis?")
    st.markdown("""
    Bike-sharing is transforming how cities move, and London is no exception. It’s fast, affordable, and eco-friendly—
    a perfect solution for both locals and visitors. Here’s why bike-sharing analysis is exciting:
@@ -51,7 +51,7 @@ if intro_section == "🚀 Why Bike-sharing Analysis?":
    This dashboard is here to make bike-sharing fun and easy to explore! Here’s what you can explore:
    1. **🚲Ride Counts**: How many bike-sharing rides happened across the city?
    2. **⏰Peak Times**: When do Londoners ride the most? Morning rush hours or evening wind-downs?
-   2. **🌦Weather Impact*: How do sunny skies or sudden rains influencing bike-sharing rides?
+   2. **🌦Weather Impact**: How do sunny skies or sudden rains influencing bike-sharing rides?
    4. **🚏Station Hotspots**: Which stations are the busiest for starts and stops, and why?
 
    We’ve made it simple and interactive, so you can explore the data, spot patterns, and maybe even plan your next ride!
