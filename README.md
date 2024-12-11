@@ -15,19 +15,23 @@ Our dashboard is structured to make your exploration smooth and insightful:
 Data Preprocessing:
 - Clean and preprocess raw data from bike-sharing and weather datasets.
 - Combine datasets on a common Date column for seamless analysis.
+
 Exploratory Data Analysis (EDA):
 - Visualize trends by time, weather, and location.
 - Explore demand patterns and feature relationships.
+
 Feature Engineering:
 - Extract and transform features like day of the week, time of day, and weather categories.
 - Encode categorical variables and scale numerical features.
+
 Modeling and Predictions:
 - Build models to predict bike-sharing demand.
 - Evaluate model performance with interactive visualizations.
 
 ### From raw data to actionable insights, this app takes you through every step!
 
-st.divider()
+
+
 
 ### How to run it on your own machine
 

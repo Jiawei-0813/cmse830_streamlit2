@@ -838,9 +838,9 @@ with combined_tab:
         fig.update_traces(texttemplate='%{y}', textposition='outside')
         fig.update_layout(showlegend=False, xaxis_title=None, coloraxis_showscale=False)
         st.plotly_chart(fig)
-
     
     # Save combined dataset to session state for future use
+    combined.to_csv("combined_data.csv", index=False)
     st.session_state['combined_data'] = combined
     st.success("Combined dataset saved successfully.")
 
