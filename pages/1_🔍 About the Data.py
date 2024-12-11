@@ -163,7 +163,7 @@ with tab2:
 
     # Hide the weather code information initially
     with st.expander("Show Detailed Weather Code Info"):
-        st.image('https://github.com/Leftium/weather-sense/assets/381217/6b346c7d-0f10-4976-bb51-e0a8678990b3', use_container_width=True)
+        st.image('https://github.com/Leftium/weather-sense/assets/381217/6b346c7d-0f10-4976-bb51-e0a8678990b3', width=800)
         st.write("""
         - **Code Description**:
         - **0**: Clear sky
