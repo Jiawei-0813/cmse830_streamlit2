@@ -840,7 +840,7 @@ with combined_tab:
         st.plotly_chart(fig)
     
     # Save combined dataset to session state for future use
-    combined.to_csv("combined_data.csv", index=False)
+    # combined.to_csv("combined_data.csv", index=False)
     st.session_state['combined_data'] = combined
     st.success("Combined dataset saved successfully.")
 

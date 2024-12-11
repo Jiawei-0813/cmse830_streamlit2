@@ -198,7 +198,7 @@ with tabs[0]:
 # --- 🌦 Weather Impact ---
 with tabs[1]:
     st.subheader("🌦Weather Impact")
-    st.markdown("Analyze how various weather conditions and meteorological factors influence bike-sharing activity.")
+    st.markdown("Analyze how various weather conditions and meteorological factors associate with bike-sharing activity.")
 
     st.divider()
 
@@ -351,13 +351,13 @@ with tabs[1]:
         - **Temperature** and **Apparent Temperature** show strong positive correlations, suggesting they similarly influence bike-sharing activity.
         - **Humidity** has a weak negative correlation, indicating a slight deterrent effect on bike-sharing.
         - **Wind Speed** exhibits minimal correlation, showing limited impact on bike-sharing trends.
-        - The correlation between **Humidity** and **Temperature** differs from that with **Apparent Temperature**, indicating nuanced interactions among meteorological factors.
+        - The correlation between **Humidity** and **Temperature** differs from that with **Apparent Temperature**, hinting at different weather patterns at play.
         """)
 
 # --- 🚏 Station Analysis ---
 with tabs[2]:
     st.subheader("🚏Station Hotspots")
-    st.markdown("Analyze bike-sharing activity trends based on station and clustering.")
+    st.markdown("Analyze bike-sharing trends based on stations.")
 
     st.divider()
 
@@ -371,47 +371,42 @@ with tabs[2]:
 
     if station_analysis == "Busiest Stations":
         st.subheader("Which stations are the busiest?")
-
         station_option = st.radio(
-        "Select station type for analysis:",
-        ["Start station", "End station", "Same Start-End", "Either Start or End"]
+            "Select station type for analysis:",
+            ["Start station", "End station"]
         )
         top_n = st.slider(f"Select top **{station_option}s**:", min_value=1, max_value=50, value=10)
 
         # Generate data for busiest stations
-        if station_option == "Same Start-End":
-            filtered_data = combined[combined["Same Start-End"]]
-            station_counts = filtered_data["Start station"].value_counts().head(top_n)
-            title = "Busiest Same Start-End Stations"
-        elif station_option == "Either Start or End":
-            start_counts = combined["Start station"].value_counts()
-            end_counts = combined["End station"].value_counts()
-            station_counts = start_counts.add(end_counts, fill_value=0).sort_values(ascending=False).head(top_n)
-            title = f"Busiest {top_n} Stations by Either Start or End"
-        else:
-            station_counts = combined[station_option].value_counts().head(top_n)
-            title = f"Busiest {top_n} {station_option}s"
-            # Create Bar Plot
-            station_df = station_counts.reset_index()
-            station_df.columns = ["Station Name", "Count"]
-            fig_busiest = px.bar(
-                station_df,
-                x="Count",
-                y="Station Name",
-                orientation="h",
-                title=title,
-                labels={"Count": "Number of Bike-Sharing Trips", "Station Name": f"{station_option} Name"},
-                color="Station Name",
-                color_discrete_sequence=px.colors.qualitative.Set2,
-                text="Count"  # Add text to display the count near the bar
-            )
-            fig_busiest.update_layout(showlegend=False)
-            fig_busiest.update_traces(textposition='outside')  # Position the text outside the bars
-            st.plotly_chart(fig_busiest)
+        station_counts = combined[station_option].value_counts().head(top_n)
+        title = f"Busiest {top_n} {station_option}s"
 
-        # Percentage Coverage
-        percentage = (station_df["Count"].sum() / len(combined)) * 100
-        st.markdown(f"Top {top_n} **{station_option.lower()}** stations account for **{percentage:.2f}%** of total trips.")
+        # Create DataFrame for plotting
+        station_df = station_counts.reset_index()
+        station_df.columns = ["Station Name", "Count"]
+
+        # Create Bar Plot using Plotly
+        fig_busiest = px.bar(
+            station_df,
+            x="Count",
+            y="Station Name",
+            orientation="h",
+            title=title,
+            labels={"Count": "Number of Bike-Sharing Trips", "Station Name": f"{station_option} Name"},
+            color="Station Name",
+            color_discrete_sequence=px.colors.qualitative.Set2,
+            text="Count"  # Add text to display the count near the bar
+        )
+        fig_busiest.update_layout(showlegend=False, xaxis=dict(showticklabels=False))
+        fig_busiest.update_traces(textposition='outside')  # Position the text outside the bars
+        st.plotly_chart(fig_busiest)
+
+        # Calculate and display Percentage Coverage
+        if 'station_df' in locals() and not station_df.empty:  # Check if station_df exists and is not empty
+            percentage = (station_df["Count"].sum() / len(combined)) * 100
+            st.markdown(f"Top {top_n} **{station_option.lower()}** stations account for **{percentage:.2f}%** of total trips.")
+        else:
+            st.markdown("No data available for the selected station option.")
 
     elif station_analysis == "Clustering":
         st.markdown("Group stations based on the number of trips using K-Means clustering.")
