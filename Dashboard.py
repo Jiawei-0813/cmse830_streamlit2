@@ -31,7 +31,6 @@ st.divider()
 # --- Sidebar for multipage navigation ---
 intro_section = st.sidebar.radio("Go to", 
                                  ["🚴‍♂️ Why Bike-sharing Analysis?", 
-                                  "🌞 Why August?", 
                                   "🚴‍♂️ Let’s Ride the Weather Together!"])
 
 # --- Why This App Section ---
@@ -57,16 +56,6 @@ if intro_section == "🚴‍♂️ Why Bike-sharing Analysis?":
    We’ve made it simple and interactive, so you can explore the data, spot patterns, and maybe even plan your next ride!
    """)
 
-# --- Why August Section ---
-elif intro_section == "🌞 Why August?":
-   st.header("🌞 Why August?")
-   st.markdown("""
-   August is all about sunny vibes, busy streets, and lots of biking! It’s when:
-   - **The weather is warm**, making it perfect for outdoor rides.
-   - **Tourists explore the city**, adding to the bike-sharing buzz.
-   - **Locals commute or relax**, using bikes for quick trips or scenic rides.
-   """)
-
 # --- Dashboard Workflow Overview Section ---
 else:
    st.header("🚴‍♂️ Let’s Ride the Weather Together!")
@@ -76,7 +65,7 @@ else:
       - Clean and preprocess raw data from bike-sharing and weather datasets.
       - Combine datasets on a common `Date` column for seamless analysis.
    2. **Exploratory Data Analysis (EDA)**:
-      - Visualize trends by time, weather, and location.
+      - Visualize trends by time, weather, and stations.
       - Explore demand patterns and feature relationships.
    3. **Feature Engineering**:
       - Extract and transform features like day of the week, time of day, and weather categories.
