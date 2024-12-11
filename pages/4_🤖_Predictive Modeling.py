@@ -253,7 +253,7 @@ with tabs[0]:
             y=y_test[:100],
             mode='lines+markers',
             name='Actual Values',
-            line=dict(color='blue'),
+            line=dict(color='lightblue'),
             marker=dict(symbol='circle')
         ))
 
@@ -296,7 +296,7 @@ with tabs[0]:
                 "Importance": model.feature_importances_
             })
 
-            col1, col2 = st.columns([1,2])
+            col1, col2 = st.columns([1,1.6])
             
             with col1:
                 st.dataframe(feature_importance)
@@ -397,7 +397,7 @@ with tabs[1]:
     st.divider()
 
     # --- Model Evaluation ---
-    st.subheader("Forecast Evaluation")
+    st.subheader("Forecast Evaluation -  Model Performance Comparison")
     if n_periods <= len(daily_data):
         # Calculate RMSE, MAE, and MSE for both models
         actual = daily_data.iloc[-n_periods:]['Number of Bike-Sharing']
@@ -411,20 +411,14 @@ with tabs[1]:
         arima_mse = mean_squared_error(actual, arima_forecast[:n_periods])
         ets_mse = mean_squared_error(actual, ets_forecast[:n_periods])
 
-        # Display RMSE, MAE, MSE for both models
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("ARIMA Model")
-            st.write(f"RMSE: {arima_rmse:.2f}")
-            st.write(f"MAE: {arima_mae:.2f}")
-            st.write(f"MSE: {arima_mse:.2f}")
-        
-        with col2:
-            st.subheader("ETS Model")
-            st.write(f"RMSE: {ets_rmse:.2f}")
-            st.write(f"MAE: {ets_mae:.2f}")
-            st.write(f"MSE: {ets_mse:.2f}")
+        # Display RMSE, MAE, MSE for both models in a table format
+        performance_data = {
+            "Metric": ["RMSE", "MAE", "MSE"],
+            "ARIMA": [f"{arima_rmse:.2f}", f"{arima_mae:.2f}", f"{arima_mse:.2f}"],
+            "ETS": [f"{ets_rmse:.2f}", f"{ets_mae:.2f}", f"{ets_mse:.2f}"]
+        }
+        performance_df = pd.DataFrame(performance_data)
+        st.table(performance_df)
 
         # Auto-generated comparison text
         if arima_rmse < ets_rmse:
