@@ -198,7 +198,7 @@ with tabs[0]:
 # --- 🌦 Weather Impact ---
 with tabs[1]:
     st.subheader("🌦Weather Impact")
-    st.markdown("Analyze how various weather conditions and meteorological factors associate with bike-sharing activity.")
+    st.markdown("Analyze how various weather conditions and meteorological factors associate bike-sharing activity.")
 
     st.divider()
 
